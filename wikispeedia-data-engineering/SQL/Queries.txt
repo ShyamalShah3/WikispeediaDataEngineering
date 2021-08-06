@@ -1,0 +1,50 @@
+/***What is the game with the Longest Path?***/
+
+SELECT TOP (1) *
+FROM Games
+ORDER BY Steps desc;
+
+/***What are the 5 most visited articles?***/
+
+SELECT TOP (5) Name as 'Article Name', count(Name) as 'Count'
+FROM Path
+GROUP BY Name
+ORDER BY count(Name) desc;
+
+/***What games start in Africa?***/
+SELECT *
+FROM Games
+WHERE Start_Path = 'Africa';
+
+/***What is the fastest completion time for gamesbetween “14th_century” and “Rainbow"***/
+SET STATISTICS TIME ON
+SELECT TOP (1) Duration
+FROM Games
+WHERE Start_Path = '14th_century' AND End_Path = 'Rainbow' AND Finished = 1
+ORDER BY Duration asc;
+SET STATISTICS TIME OFF
+
+/***What is the fastest completion time for gamesbetween “14th_century” and “Rainbow"***/
+SET STATISTICS TIME ON
+SELECT TOP (5) Game_ID, Steps - 1 as 'Clicks', Duration
+FROM Games
+WHERE Start_Path = '14th_century' AND End_Path = 'Rainbow' AND Finished = 1
+ORDER BY Steps asc, Duration asc;
+SET STATISTICS TIME OFF
+
+/***All paths visiting only 3 articles, including “Brazil”, and taking 1 min+ to finish***/
+SET STATISTICS TIME ON
+SELECT Timestamp
+FROM (SELECT Timestamp, Game_ID, Duration, Steps FROM [GraphDB1].[dbo].[Games] WHERE Duration > 60 AND Steps = 3) as t
+JOIN Path ON t.Game_ID = Path.[Game_ID]
+WHERE Path.[Name] = 'Brazil';
+SET STATISTICS TIME OFF
+
+/***Find all articles that contain links to “Monarchy” and “Sport” with category “subject.citizenship.politics_and_government”***/
+SET STATISTICS TIME ON
+SELECT Article_Name
+FROM Article
+WHERE Article_ID = (SELECT c.ID
+FROM (SELECT t.Article_Source_ID as 'ID' FROM (SELECT Article_Source_ID FROM ArticleLinks WHERE Article_Target_ID = (SELECT Article_ID FROM Article WHERE Article_Name = 'Sport')) as t JOIN (SELECT Article_Source_ID FROM ArticleLinks WHERE Article_Target_ID = (SELECT Article_ID FROM Article WHERE Article_Name = 'Monarchy')) as j ON t.Article_Source_ID = j.Article_Source_ID) AS c
+JOIN (SELECT Article_ID FROM HasArticle WHERE Category_ID = (SELECT Category_ID FROM Category WHERE Category_Name = 'politics_and_government')) as p ON p.Article_ID = c.ID);
+SET STATISTICS TIME OFF
